@@ -1,5 +1,9 @@
 [build]
-  command = "cd frontend && npm run build"
+  # There's no package.json at the repo root, so Netlify's automatic
+  # dependency install never runs — install explicitly for both frontend
+  # (needed for the build itself) and backend (needed so the function
+  # bundler can resolve its node_modules).
+  command = "cd frontend && npm install && npm run build && cd ../backend && npm install"
   publish = "frontend/dist"
 
 # Netlify's build image sets NODE_ENV=production during npm install, which
