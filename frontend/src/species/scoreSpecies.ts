@@ -63,7 +63,7 @@ function scoreTrend(trend: string, preferred: string[]): number {
  * (виды стоячей воды) не место в списке видов для реки или канала —
  * их отсекаем полностью, а не просто слегка занижаем скор.
  */
-function isHabitatCompatible(kind: WaterBodyKind, habitat: WaterBodyKind[]): boolean {
+export function isHabitatCompatible(kind: WaterBodyKind, habitat: WaterBodyKind[]): boolean {
   if (kind === 'water') return true;
   return habitat.includes(kind);
 }

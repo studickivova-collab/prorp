@@ -13,9 +13,18 @@ interface Props {
   onClose: () => void;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  echoMode: boolean;
+  onToggleEcho: () => void;
 }
 
-export function WaterBodyPanel({ summary, onClose, isFavorite, onToggleFavorite }: Props) {
+export function WaterBodyPanel({
+  summary,
+  onClose,
+  isFavorite,
+  onToggleFavorite,
+  echoMode,
+  onToggleEcho,
+}: Props) {
   const { t } = useI18n();
   const kindLabel = t(`water.${summary.kind}` as const);
   const [lat, lon] = summary.center;
@@ -69,6 +78,20 @@ export function WaterBodyPanel({ summary, onClose, isFavorite, onToggleFavorite 
           📔 {t('diary.logCatch')}
         </button>
       </div>
+
+      <button
+        onClick={onToggleEcho}
+        className={`btn w-full py-2 mt-2 ${
+          echoMode
+            ? 'bg-brand-500/20 text-brand-700 dark:text-brand-300 border-2 border-brand-500/50'
+            : 'btn-ghost'
+        }`}
+      >
+        📡 {echoMode ? t('echo.toggleOn') : t('echo.toggle')}
+      </button>
+      {echoMode && (
+        <p className="text-[11px] text-ink-faint mt-1.5 leading-snug">{t('echo.disclaimer')}</p>
+      )}
 
       <div className="mt-3">
         <ActivityIndexCard weather={weather} loading={loading} error={error} lat={lat} lon={lon} />

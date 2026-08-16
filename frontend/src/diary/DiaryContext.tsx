@@ -15,6 +15,11 @@ function readStored(): CatchEntry[] {
 export interface DiaryPrefill {
   waterBodyName?: string;
   conditions?: string;
+  /** Present when opened from a map tap in echo-sounder mode — the saved
+   * entry carries these through so it can be plotted back on the map. */
+  waterBodyId?: string;
+  lat?: number;
+  lon?: number;
 }
 
 interface DiaryContextValue {

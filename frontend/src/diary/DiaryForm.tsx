@@ -39,10 +39,19 @@ export function DiaryForm({ prefill, onSave, onCancel }: Props) {
           species: species.trim(),
           weightKg: weightKg ? Number(weightKg) : null,
           conditions: conditions.trim(),
+          waterBodyId: prefill?.waterBodyId,
+          lat: prefill?.lat,
+          lon: prefill?.lon,
         });
       }}
       className="space-y-3"
     >
+      {prefill?.lat !== undefined && prefill?.lon !== undefined && (
+        <div className="text-xs text-brand-600 dark:text-brand-400 bg-brand-500/10 border border-brand-500/30 rounded-lg px-3 py-2">
+          📍 {t('diary.pinnedOnMap')}
+        </div>
+      )}
+
       <label className="block">
         <span className="block text-xs text-ink-muted mb-1">{t('diary.date')}</span>
         <input type="date" value={dateIso} onChange={(e) => setDateIso(e.target.value)} className={fieldClass} />

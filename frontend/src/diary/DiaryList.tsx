@@ -35,6 +35,7 @@ export function DiaryList({ entries, onRemove, onAdd }: Props) {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-ink">
+                    {e.lat !== undefined && <span title="pinned on map">📍 </span>}
                     {e.species}
                     {e.weightKg ? ` · ${e.weightKg} кг` : ''}
                   </div>
