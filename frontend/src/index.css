@@ -1,0 +1,176 @@
+/* Oswald: condensed, bold, outdoor-gear-label typeface for headings/UI chrome.
+   Inter: kept for body copy — it stays legible at small sizes in bright sun.
+   Must precede @import "tailwindcss" — @import rules have to come first. */
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-display: 'Oswald', 'Arial Narrow', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* Brand = deep pine/river green — the primary chrome & CTA colour. */
+  --color-brand-50: #eef8f1;
+  --color-brand-100: #d4ecdb;
+  --color-brand-200: #a9d9b9;
+  --color-brand-300: #7abf94;
+  --color-brand-400: #4fa171;
+  --color-brand-500: #35825a;
+  --color-brand-600: #276845;
+  --color-brand-700: #1f5337;
+  --color-brand-800: #19422c;
+  --color-brand-900: #143724;
+  --color-brand-950: #0a2015;
+
+  /* Accent = bobber/lure amber — sparingly, for highlights and "best day" stars. */
+  --color-accent-300: #f6c581;
+  --color-accent-400: #f0a94e;
+  --color-accent-500: #e08a28;
+  --color-accent-600: #bd6c17;
+  --color-accent-700: #935314;
+
+  /* Semantic surface/text tokens. @theme values are the :root (dark) default —
+     dark is "night water": deep teal-charcoal, not generic slate. */
+  --color-surface-0: #081619;
+  --color-surface-1: #0d2126;
+  --color-surface-2: #163038;
+  --color-surface-3: #1f3f48;
+  --color-line: #26454e;
+  --color-line-strong: #386069;
+  --color-ink: #f2f7f4;
+  --color-ink-soft: #c7dcd6;
+  --color-ink-muted: #93aca6;
+  --color-ink-faint: #6c8781;
+}
+
+/* Light palette: warm parchment/canvas, evokes an old topo map — not a SaaS grey. */
+:root:not(.dark) {
+  --color-surface-0: #efe7d2;
+  --color-surface-1: #faf5e7;
+  --color-surface-2: #f1e8d0;
+  --color-surface-3: #e5d8b3;
+  --color-line: #d3c194;
+  --color-line-strong: #b89f6c;
+  --color-ink: #2a2213;
+  --color-ink-soft: #493c25;
+  --color-ink-muted: #71624a;
+  --color-ink-faint: #93826a;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+:root:not(.dark) {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-surface-0);
+  /* Subtle woven-canvas texture behind everything, plus a faint contour-line
+     watermark — the "outdoors map" motif carried through the whole app. */
+  background-image:
+    repeating-linear-gradient(45deg, rgba(127, 127, 127, 0.05) 0px, rgba(127, 127, 127, 0.05) 1px, transparent 1px, transparent 10px),
+    repeating-linear-gradient(-45deg, rgba(127, 127, 127, 0.05) 0px, rgba(127, 127, 127, 0.05) 1px, transparent 1px, transparent 10px);
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+}
+
+/* Leaflet needs an explicit height on its container */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: var(--color-surface-2);
+  font-family: var(--font-body);
+}
+
+/* ---- Shared "tackle box" component classes ---- */
+@layer components {
+  /* Card used throughout for weather/activity/species/calendar/diary blocks.
+     Heavier 2px border + a hairline inner highlight reads as a sturdy
+     tackle-box compartment rather than a flat SaaS card. */
+  .panel {
+    border-radius: 0.75rem;
+    background-color: color-mix(in srgb, var(--color-surface-2) 70%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--color-line) 85%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .btn {
+    border-radius: 0.6rem;
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    transition: transform 0.15s ease, filter 0.15s ease, background-color 0.15s ease;
+  }
+  .btn:active {
+    transform: translateY(1px);
+  }
+
+  .btn-primary {
+    background-color: var(--color-brand-500);
+    color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+  }
+  .btn-primary:hover {
+    background-color: var(--color-brand-400);
+  }
+  .btn-primary:disabled {
+    opacity: 0.4;
+  }
+
+  .btn-ghost {
+    background-color: var(--color-surface-3);
+    color: var(--color-ink-soft);
+    border: 1.5px solid var(--color-line);
+  }
+  .btn-ghost:hover {
+    background-color: var(--color-line);
+  }
+
+  /* Pill filters (all/lakes/rivers, locale switch) */
+  .chip {
+    border-radius: 999px;
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .chip-active {
+    background-color: var(--color-brand-500);
+    color: #fff;
+  }
+  .chip-inactive {
+    background-color: var(--color-surface-3);
+    color: var(--color-ink-soft);
+  }
+  .chip-inactive:hover {
+    background-color: var(--color-line);
+  }
+
+  /* Section eyebrow labels ("Погода", "Календарь клёва" etc.) */
+  .eyebrow {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.68rem;
+    color: var(--color-ink-muted);
+  }
+}

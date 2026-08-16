@@ -1,0 +1,27 @@
+[build]
+  command = "cd frontend && npm run build"
+  publish = "frontend/dist"
+
+[functions]
+  directory = "backend/netlify/functions"
+  node_bundler = "esbuild"
+
+# Frontend calls /api/waterbodies, /api/weather, /api/health (see
+# frontend/src/lib/api.ts, VITE_API_BASE_URL defaults to "/api"). The
+# Express app (backend/src/app.ts) still expects the "/api" prefix on its
+# routes too — so the target keeps a second "/api" segment: Netlify strips
+# only the "/.netlify/functions/api" part before invoking the function,
+# and the rest of the path (still starting with "/api/...") reaches
+# Express unchanged, matching its routes with zero code differences
+# between local dev and the deployed function.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/api/:splat"
+  status = 200
+
+# Single-page app fallback (safe to keep even though the app currently
+# has no client-side routes beyond "/").
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
