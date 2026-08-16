@@ -3,14 +3,19 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
 // On Netlify (AWS Lambda under the hood) the deployed function bundle is
 // read-only — only os.tmpdir() ("/tmp") is writable, and even that isn't
 // guaranteed to persist between invocations (only within a warm container).
 // Locally, keep using a real project-relative folder as before.
+//
+// import.meta.url is only resolved in the local (non-serverless) branch:
+// esbuild's CJS bundling for Netlify Functions leaves import.meta.url
+// undefined, and calling fileURLToPath(undefined) throws at module-load
+// time, crashing the function before it can even handle a request.
 const isServerless = Boolean(process.env.LAMBDA_TASK_ROOT || process.env.NETLIFY);
-const CACHE_DIR = isServerless ? join(tmpdir(), 'sv-cope-cache') : join(__dirname, '..', '..', '.cache');
+const CACHE_DIR = isServerless
+  ? join(tmpdir(), 'sv-cope-cache')
+  : join(dirname(fileURLToPath(import.meta.url)), '..', '..', '.cache');
 
 interface DiskEntry<T> {
   value: T;
