@@ -2,6 +2,7 @@ import { useI18n } from '../i18n/I18nContext';
 import { LOCALES } from '../i18n/translations';
 import { useTheme } from '../context/ThemeContext';
 import { useDiary } from '../diary/DiaryContext';
+import { useGuide } from '../guide/GuideContext';
 
 /** Simple hook-and-line mark — stands in for a generic emoji logo. */
 function HookLogo() {
@@ -29,6 +30,7 @@ export function Header() {
   const { t, locale, setLocale } = useI18n();
   const { theme, toggleTheme } = useTheme();
   const { openList } = useDiary();
+  const { open: openGuide } = useGuide();
 
   return (
     <header className="flex items-center justify-between gap-3 px-4 py-2.5 bg-surface-1 border-b-2 border-brand-700 shrink-0">
@@ -53,6 +55,13 @@ export function Header() {
             </button>
           ))}
         </div>
+        <button
+          onClick={() => openGuide('species')}
+          aria-label={t('guide.button')}
+          className="w-8 h-8 rounded-full bg-surface-3 border border-line text-ink-soft flex items-center justify-center hover:bg-line-strong"
+        >
+          🐟
+        </button>
         <button
           onClick={() => openList()}
           aria-label={t('diary.button')}

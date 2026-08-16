@@ -1,6 +1,7 @@
 import { useI18n } from '../i18n/I18nContext';
 import { useTopSpecies } from './useTopSpecies';
 import { SpeciesCard } from './SpeciesCard';
+import { useGuide } from '../guide/GuideContext';
 import type { WeatherResponse } from '../types/weather';
 import type { WaterBodyKind } from '../types/waterBody';
 
@@ -15,6 +16,7 @@ interface Props {
 
 export function TopSpeciesPanel({ weather, loading, error, lat, lon, waterKind }: Props) {
   const { t } = useI18n();
+  const { open: openGuide } = useGuide();
   const top = useTopSpecies(weather, lat, lon, waterKind);
 
   if (loading) {
@@ -33,6 +35,12 @@ export function TopSpeciesPanel({ weather, loading, error, lat, lon, waterKind }
           <SpeciesCard key={scored.profile.id} scored={scored} rank={i} />
         ))}
       </div>
+      <button
+        onClick={() => openGuide('species')}
+        className="mt-2 text-xs text-brand-600 dark:text-brand-400 hover:underline"
+      >
+        {t('species.viewAll')}
+      </button>
     </div>
   );
 }

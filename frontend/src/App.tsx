@@ -1,6 +1,7 @@
 import { Header } from './components/Header';
 import { MapScreen } from './map/MapScreen';
 import { DiaryModal } from './diary/DiaryModal';
+import { GuideModal } from './guide/GuideModal';
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
         <MapScreen />
       </main>
       <DiaryModal />
+      <GuideModal />
     </div>
   );
 }

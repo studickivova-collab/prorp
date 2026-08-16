@@ -9,13 +9,19 @@ import { classifyTimeOfDay } from '../lib/astro';
  * Веса подфакторов пригодности вида под текущие условия. Сезон (месяц)
  * значит больше всего — он определяет, ловится ли вид вообще сейчас;
  * остальное — тонкая настройка внутри сезона.
+ *
+ * habitat намеренно весит больше остальных "тонких" факторов: тип
+ * водоёма (озеро/река/непонятно) — это вопрос "водится ли здесь вообще
+ * этот вид", а не "хороший ли сейчас момент". Раньше он весил всего 5%
+ * и почти не влиял на итоговый скор, из-за чего, например, карпа (вид
+ * стоячей воды) подсовывало и на реках/каналах вроде Саркандаугавы.
  */
 const SPECIES_WEIGHTS = {
-  month: 0.4,
-  temperature: 0.25,
-  timeOfDay: 0.2,
-  trend: 0.1,
-  habitat: 0.05,
+  month: 0.3,
+  temperature: 0.2,
+  timeOfDay: 0.15,
+  trend: 0.05,
+  habitat: 0.3,
 };
 
 function circularMonthDistance(month: number, activeMonths: number[]): number {
@@ -47,8 +53,23 @@ function scoreTrend(trend: string, preferred: string[]): number {
   return preferred.includes(trend) ? 100 : 60;
 }
 
+/**
+ * Есть ли виду смысл вообще фигурировать на водоёме такого типа.
+ *
+ * "water" — это OSM-категория "непонятно что" (не распозналось явно ни
+ * как стоячая вода, ни как река/канал) — для неё честного ответа нет,
+ * так что не фильтруем и даём решить остальным факторам. А вот "lake"
+ * и "river" — это уже осмысленная классификация: карпу, линю и карасю
+ * (виды стоячей воды) не место в списке видов для реки или канала —
+ * их отсекаем полностью, а не просто слегка занижаем скор.
+ */
+function isHabitatCompatible(kind: WaterBodyKind, habitat: WaterBodyKind[]): boolean {
+  if (kind === 'water') return true;
+  return habitat.includes(kind);
+}
+
 function scoreHabitat(kind: WaterBodyKind, habitat: WaterBodyKind[]): number {
-  return habitat.includes(kind) || habitat.includes('water') ? 100 : 55;
+  return habitat.includes(kind) ? 100 : 60;
 }
 
 export function scoreAllSpecies(
@@ -61,16 +82,18 @@ export function scoreAllSpecies(
   const { trend } = computePressureTrend(weather);
   const period = classifyTimeOfDay(date, lat, lon);
 
-  return SPECIES.map((profile) => {
-    const score =
-      scoreMonth(date, profile) * SPECIES_WEIGHTS.month +
-      scoreTemperature(weather.current.temperature, profile.tempRange) * SPECIES_WEIGHTS.temperature +
-      scoreTimeOfDay(period, profile.preferredTimeOfDay) * SPECIES_WEIGHTS.timeOfDay +
-      scoreTrend(trend, profile.preferredTrends) * SPECIES_WEIGHTS.trend +
-      scoreHabitat(waterKind, profile.habitat) * SPECIES_WEIGHTS.habitat;
+  return SPECIES.filter((profile) => isHabitatCompatible(waterKind, profile.habitat))
+    .map((profile) => {
+      const score =
+        scoreMonth(date, profile) * SPECIES_WEIGHTS.month +
+        scoreTemperature(weather.current.temperature, profile.tempRange) * SPECIES_WEIGHTS.temperature +
+        scoreTimeOfDay(period, profile.preferredTimeOfDay) * SPECIES_WEIGHTS.timeOfDay +
+        scoreTrend(trend, profile.preferredTrends) * SPECIES_WEIGHTS.trend +
+        scoreHabitat(waterKind, profile.habitat) * SPECIES_WEIGHTS.habitat;
 
-    return { profile, score: Math.round(score) };
-  }).sort((a, b) => b.score - a.score);
+      return { profile, score: Math.round(score) };
+    })
+    .sort((a, b) => b.score - a.score);
 }
 
 export function getTopSpecies(

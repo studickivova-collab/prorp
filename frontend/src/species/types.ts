@@ -2,7 +2,23 @@ import type { PressureTrend } from '../weather/pressure';
 import type { TimeOfDayPeriod } from '../lib/astro';
 import type { WaterBodyKind } from '../types/waterBody';
 
-export type SpeciesId = 'pike' | 'perch' | 'zander' | 'bream' | 'roach' | 'carp' | 'tench' | 'eel';
+export type SpeciesId =
+  | 'pike'
+  | 'perch'
+  | 'zander'
+  | 'bream'
+  | 'roach'
+  | 'carp'
+  | 'tench'
+  | 'eel'
+  | 'catfish'
+  | 'burbot'
+  | 'asp'
+  | 'ide'
+  | 'chub'
+  | 'crucianCarp'
+  | 'rudd'
+  | 'silverBream';
 
 export interface SpeciesProfile {
   id: SpeciesId;
@@ -20,8 +36,14 @@ export interface SpeciesProfile {
 export interface SpeciesText {
   name: string;
   season: string;
+  /** Повадки и поведение вида: где стоит, как питается, на что реагирует. */
+  habits: string;
   baits: string[];
   tackle: string[];
+  /** Инструкция по прикормке/привлечению рыбы на точку. */
+  groundbait: string[];
+  /** Официальные лимиты РБ (мин. размер, разрешённое количество, запрет на нерест) — если применимо. */
+  regulation?: string;
   note?: string;
 }
 

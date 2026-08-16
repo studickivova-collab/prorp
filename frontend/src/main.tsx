@@ -8,13 +8,16 @@ import App from './App.tsx';
 import { ThemeProvider } from './context/ThemeContext';
 import { I18nProvider } from './i18n/I18nContext';
 import { DiaryProvider } from './diary/DiaryContext';
+import { GuideProvider } from './guide/GuideContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <I18nProvider>
         <DiaryProvider>
-          <App />
+          <GuideProvider>
+            <App />
+          </GuideProvider>
         </DiaryProvider>
       </I18nProvider>
     </ThemeProvider>
