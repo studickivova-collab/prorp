@@ -1,38 +1,34 @@
-import { LATVIA_BBOX, OVERPASS_URL, OVERPASS_CACHE_TTL_HOURS } from '../lib/config.js';
+import { OVERPASS_URL, OVERPASS_CACHE_TTL_HOURS } from '../lib/config.js';
 import { TtlCache } from '../lib/cache.js';
-import { readDiskCache, writeDiskCache } from '../lib/diskCache.js';
+import waterBodySummarySnapshot from '../data/latvia-waterbodies-summary.json' with { type: 'json' };
 import type { WaterBody, WaterBodyKind, WaterBodySummary } from '../types.js';
 
-const cache = new TtlCache<WaterBody[]>();
-// v2: bumped so the broadened query (ponds/reservoirs/canals — needed for
-// Riga's urban water bodies) isn't masked by a stale v1 disk cache entry.
-const CACHE_KEY = 'latvia-waterbodies-v2';
+// The full "all of Latvia, all geometry" Overpass query this used to run on
+// every cold start takes 30-90s (~15MB response) — fine for a long-lived
+// local dev server, but far past Netlify Functions' hard execution ceiling
+// (~10-26s), so the deployed map load always failed with a 502.
+//
+// Fix: the summary list (pins on the map — id/name/kind/center, no
+// geometry) ships as a static snapshot bundled into the function at build
+// time, so it's served instantly with zero Overpass calls. Full geometry
+// for a single water body (fetched on marker click) is a small,
+// single-element Overpass query instead of a filter over the giant list —
+// that stays well within the timeout.
+//
+// The snapshot can be refreshed periodically by regenerating
+// src/data/latvia-waterbodies-summary.json from a fresh Overpass fetch.
+const byIdCache = new TtlCache<WaterBody>();
 
-const { south, west, north, east } = LATVIA_BBOX;
-const BBOX = `${south},${west},${north},${east}`;
-
-// Помимо крупных природных озёр/рек, отдельно включены пруды, водохранилища
-// и каналы — без них выпадает почти вся "городская вода": пруды в парках,
-// канал в центре Риги, водохранилища и т.п. Оба варианта тегирования (way и
-// relation) учтены для water=*, т.к. часть прудов/водохранилищ размечены
-// как multipolygon-отношения.
-const OVERPASS_QUERY = `
-[out:json][timeout:90];
-(
-  way["natural"="water"]["name"](${BBOX});
-  relation["natural"="water"]["name"](${BBOX});
-  way["water"="lake"]["name"](${BBOX});
-  way["water"="pond"]["name"](${BBOX});
-  way["water"="reservoir"]["name"](${BBOX});
-  way["water"="lagoon"]["name"](${BBOX});
-  relation["water"]["name"](${BBOX});
-  way["landuse"="reservoir"]["name"](${BBOX});
-  way["landuse"="basin"]["name"](${BBOX});
-  way["waterway"="river"]["name"](${BBOX});
-  way["waterway"="canal"]["name"](${BBOX});
-);
+/** Small, single-element query for full geometry on marker click — stays
+ * well within Netlify Functions' execution ceiling, unlike the old
+ * all-of-Latvia query this replaces. */
+function singleElementQuery(osmType: string, osmId: string): string {
+  return `
+[out:json][timeout:25];
+${osmType}(${osmId});
 out geom;
 `.trim();
+}
 
 interface OverpassGeomPoint {
   lat: number;
@@ -132,7 +128,7 @@ function parseElement(el: OverpassElement): WaterBody | null {
   };
 }
 
-async function fetchFromOverpass(): Promise<WaterBody[]> {
+async function fetchSingleElement(osmType: string, osmId: string): Promise<WaterBody | null> {
   const res = await fetch(OVERPASS_URL, {
     method: 'POST',
     headers: {
@@ -140,7 +136,7 @@ async function fetchFromOverpass(): Promise<WaterBody[]> {
       // Overpass rejects requests with no identifiable User-Agent.
       'User-Agent': 'SVCopeApp/1.0 (fishing conditions app for Latvia)',
     },
-    body: `data=${encodeURIComponent(OVERPASS_QUERY)}`,
+    body: `data=${encodeURIComponent(singleElementQuery(osmType, osmId))}`,
   });
 
   if (!res.ok) {
@@ -148,46 +144,30 @@ async function fetchFromOverpass(): Promise<WaterBody[]> {
   }
 
   const json = (await res.json()) as OverpassResponse;
-  const seen = new Set<string>();
-  const bodies: WaterBody[] = [];
-
   for (const el of json.elements) {
     const parsed = parseElement(el);
-    if (parsed && !seen.has(parsed.id)) {
-      seen.add(parsed.id);
-      bodies.push(parsed);
-    }
+    if (parsed) return parsed;
   }
-
-  return bodies;
+  return null;
 }
 
-export async function getLatviaWaterBodies(): Promise<WaterBody[]> {
-  const cached = cache.get(CACHE_KEY);
-  if (cached) return cached;
-
-  const onDisk = readDiskCache<WaterBody[]>(CACHE_KEY);
-  if (onDisk) {
-    cache.set(CACHE_KEY, onDisk, OVERPASS_CACHE_TTL_HOURS);
-    return onDisk;
-  }
-
-  const bodies = await fetchFromOverpass();
-  cache.set(CACHE_KEY, bodies, OVERPASS_CACHE_TTL_HOURS);
-  writeDiskCache(CACHE_KEY, bodies, OVERPASS_CACHE_TTL_HOURS);
-  return bodies;
-}
-
-/** Small payload for the initial map render: no geometry, just pins. */
+/** Small payload for the initial map render: no geometry, just pins, served
+ * instantly from the bundled build-time snapshot — zero Overpass calls. */
 export async function getLatviaWaterBodySummaries(): Promise<WaterBodySummary[]> {
-  const bodies = await getLatviaWaterBodies();
-  return bodies.map(({ id, name, kind, center }) => ({ id, name, kind, center }));
+  return waterBodySummarySnapshot.items as WaterBodySummary[];
 }
 
 export async function getWaterBodyById(
   osmType: string,
   osmId: string,
 ): Promise<WaterBody | null> {
-  const bodies = await getLatviaWaterBodies();
-  return bodies.find((b) => b.osmType === osmType && String(b.osmId) === osmId) ?? null;
+  const cacheKey = `${osmType}/${osmId}`;
+  const cached = byIdCache.get(cacheKey);
+  if (cached) return cached;
+
+  if (osmType !== 'way' && osmType !== 'relation') return null;
+
+  const body = await fetchSingleElement(osmType, osmId);
+  if (body) byIdCache.set(cacheKey, body, OVERPASS_CACHE_TTL_HOURS);
+  return body;
 }
