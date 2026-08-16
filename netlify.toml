@@ -2,6 +2,12 @@
   command = "cd frontend && npm run build"
   publish = "frontend/dist"
 
+# Netlify's build image sets NODE_ENV=production during npm install, which
+# makes npm skip devDependencies (tsc, vite, etc. all live there). This
+# forces them to be installed anyway so the frontend build script works.
+[build.environment]
+  NPM_FLAGS = "--include=dev"
+
 [functions]
   directory = "backend/netlify/functions"
   node_bundler = "esbuild"
